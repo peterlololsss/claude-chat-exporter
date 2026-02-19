@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Chat Exporter</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0e0e10;
+      --surface: #18181c;
+      --border:  #2a2a30;
+      --accent:  #e8845a;
+      --accent2: #c96b3e;
+      --text:    #f0ece6;
+      --muted:   #7a7880;
+      --success: #5ec97e;
+      --error:   #e85a5a;
+    }
+
+    body {
+      width: 320px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+    .logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 16px; height: 16px; }
+    .header-text h1 {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      line-height: 1;
+    }
+    .header-text p {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+    .badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-family: 'DM Mono', monospace;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Body ── */
+    .body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 9px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    /* ── Format selector ── */
+    .format-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .format-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 4px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      color: var(--text);
+    }
+    .format-btn:hover { border-color: var(--accent); }
+    .format-btn.active {
+      border-color: var(--accent);
+      background: rgba(232, 132, 90, 0.12);
+    }
+    .format-btn .fmt-icon {
+      font-size: 16px;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .format-btn .fmt-name {
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      display: block;
+    }
+    .format-btn .fmt-desc {
+      font-size: 9px;
+      color: var(--muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* ── Options row ── */
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .option-group label.section-label { display: block; }
+    select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7880' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 24px;
+    }
+    select:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Export button ── */
+    .export-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: 0.3px;
+    }
+    .export-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+    .export-btn:active { transform: translateY(0); }
+    .export-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Status ── */
+    .status {
+      display: none;
+      padding: 10px 12px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      line-height: 1.5;
+      border: 1px solid transparent;
+    }
+    .status.success {
+      display: block;
+      background: rgba(94, 201, 126, 0.1);
+      border-color: rgba(94, 201, 126, 0.3);
+      color: var(--success);
+    }
+    .status.error {
+      display: block;
+      background: rgba(232, 90, 90, 0.1);
+      border-color: rgba(232, 90, 90, 0.3);
+      color: var(--error);
+    }
+    .status.loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--muted);
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: none;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      overflow: hidden;
+    }
+    .stats.show { display: flex; }
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      background: var(--surface);
+    }
+    .stat:not(:last-child) { border-right: 1px solid var(--border); }
+    .stat-val {
+      display: block;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-key {
+      display: block;
+      font-size: 9px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      margin-top: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer a {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .footer a:hover { color: var(--accent); }
+
+    /* ── Not on chat page warning ── */
+    .not-chat-page {
+      padding: 20px;
+      text-align: center;
+    }
+    .not-chat-page .icon { font-size: 32px; margin-bottom: 10px; }
+    .not-chat-page p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .not-chat-page strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 2L13 5V11L8 14L3 11V5L8 2Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M8 6V10M6 8H10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="header-text">
+    <h1>Claude Exporter</h1>
+    <p>conversation → file</p>
+  </div>
+  <span class="badge">v1.0</span>
+</div>
+
+<div id="mainContent">
+  <div class="body">
+
+    <!-- Format -->
+    <div>
+      <p class="section-label">Export Format</p>
+      <div class="format-grid">
+        <button class="format-btn active" data-format="xml">
+          <span class="fmt-icon">🧩</span>
+          <span class="fmt-name">XML+MD</span>
+          <span class="fmt-desc">Best for Claude</span>
+        </button>
+        <button class="format-btn" data-format="markdown">
+          <span class="fmt-icon">📝</span>
+          <span class="fmt-name">Markdown</span>
+          <span class="fmt-desc">Human readable</span>
+        </button>
+        <button class="format-btn" data-format="json">
+          <span class="fmt-icon">📦</span>
+          <span class="fmt-name">JSON</span>
+          <span class="fmt-desc">Structured data</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="options-row">
+      <div class="option-group">
+        <label class="section-label">Role Filter</label>
+        <select id="roleFilter">
+          <option value="both">Both roles</option>
+          <option value="human">Human only</option>
+          <option value="assistant">Claude only</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label class="section-label">Turn Limit</label>
+        <select id="turnLimit">
+          <option value="0">All turns</option>
+          <option value="20">Last 20</option>
+          <option value="50">Last 50</option>
+          <option value="100">Last 100</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats (shown after export) -->
+    <div class="stats" id="stats">
+      <div class="stat">
+        <span class="stat-val" id="statTotal">—</span>
+        <span class="stat-key">Total</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val" id="statHuman">—</span>
+        <span class="stat-key">Human</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val" id="statAI">—</span>
+        <span class="stat-key">Claude</span>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="status"></div>
+
+    <!-- Export button -->
+    <button class="export-btn" id="exportBtn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Export Conversation
+    </button>
+
+  </div>
+</div>
+
+<div id="notChatPage" style="display:none">
+  <div class="not-chat-page">
+    <div class="icon">💬</div>
+    <p>Open a <strong>claude.ai/chat/…</strong> conversation page, then click this button again.</p>
+  </div>
+</div>
+
+<div class="footer">
+  <a href="https://github.com/peterlololsss/claude-chat-exporter" target="_blank">GitHub</a>
+  <a href="#" id="copyLastBtn" style="display:none">Copy to clipboard</a>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
