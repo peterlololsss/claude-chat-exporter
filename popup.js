@@ -18,11 +18,11 @@ chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
 });
 
 // ── Format toggle ────────────────────────────────────────────────────────────
-document.querySelectorAll('.format-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedFormat = btn.dataset.format;
+document.querySelectorAll('.format-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.format-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    selectedFormat = card.dataset.format;
   });
 });
 
@@ -33,7 +33,7 @@ exportBtn.addEventListener('click', async () => {
 
   setStatus('loading', 'Extracting conversation…');
   exportBtn.disabled = true;
-  statsEl.classList.remove('show');
+  statsEl.style.display = 'none';
   copyLastBtn.style.display = 'none';
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -84,7 +84,7 @@ exportBtn.addEventListener('click', async () => {
       document.getElementById('statTotal').textContent = m.turnCount;
       document.getElementById('statHuman').textContent = m.humanCount;
       document.getElementById('statAI').textContent    = m.aiCount;
-      statsEl.classList.add('show');
+      statsEl.style.display = 'block';
 
       setStatus('success',
         `✅ Saved: ${response.filename}\n` +
@@ -109,10 +109,12 @@ copyLastBtn.addEventListener('click', async () => {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function setStatus(type, message) {
-  statusEl.className = 'status ' + type;
+  statusEl.className = 'status-msg ' + type;
+  statusEl.style.display = 'block';
   if (type === 'loading') {
     statusEl.innerHTML = `<div class="spinner"></div><span>${message}</span>`;
+    statusEl.style.display = 'flex';
   } else {
-    statusEl.textContent = message;
+    statusEl.innerText = message;
   }
 }
