@@ -1,0 +1,48 @@
+name: Build and Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Metadata
+        id: meta
+        run: |
+          VERSION=$(jq -r .version manifest.json)
+          PROJECT_NAME="claude-chat-exporter"
+          FILENAME="${PROJECT_NAME}-v${VERSION}.zip"
+          echo "filename=${FILENAME}" >> $GITHUB_OUTPUT
+
+      - name: Zip Extension Package
+        run: |
+          zip -r "${{ steps.meta.outputs.filename }}" . \
+            -x "*.git*" \
+            ".github/*" \
+            "README.md" \
+            ".DS_Store" \
+            "LICENSE" \
+            "*.zip"
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: ${{ steps.meta.outputs.filename }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.meta.outputs.filename }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
